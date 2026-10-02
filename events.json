@@ -1,5 +1,13 @@
 [
-  { "name": "octocat/Hello-World", "starred": "2024-01-15" },
-  { "name": "github/docs", "starred": "2024-02-02" },
-  { "name": "octo-org/octo-repo", "starred": "2024-03-21" }
+  { "name": "octocat/Hello-World", "starred": "2024-01-15","language": "JavaScript",
+    "topic": "Web" },
+  { "name": "github/docs", "starred": "2024-02-02","language": "Markdown",
+    "topic": "Documentation" },
+  { "name": "octo-org/octo-repo", "starred": "2024-03-21" ,  "language": "Python",
+    "topic": "Web"}, {
+    "name": "example/data-project",
+    "starred": "2024-04-10",
+    "language": "Python",
+    "topic": "Data"
+  }
 ]
