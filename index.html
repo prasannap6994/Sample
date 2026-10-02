@@ -9,6 +9,20 @@
     <h1>Stargazers log</h1>
     <p>A log of the repositories I've starred.</p>
     <p>A second log of the repositories I've starred.</p>
+    <div class="filters">
+      <input
+        type="text"
+        id="search"
+        placeholder="Search repositories..."
+      >
+
+      <select id="topic">
+        <option value="all">All topics</option>
+        <option value="Web">Web</option>
+        <option value="Documentation">Documentation</option>
+        <option value="Data">Data</option>
+      </select>
+    </div>
     <ul id="starred"></ul>
     <script src="script.js"></script>
   </body>

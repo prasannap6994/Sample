@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  # Dummy values satisfy orchestrator config.ts's IMPORT-TIME zod validation
+  # (the known ZodError-at-collection gotcha). Nothing contacts a live
+  # service: web live suites are excluded by file pattern below, and the
+  # postgres.js client connects lazily (no unit test queries it).
+  NOVITA_API_KEY: ci-dummy
+  VOYAGE_API_KEY: ci-dummy
+  DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+  BETTER_AUTH_SECRET: ci-dummy-secret
+  BETTER_AUTH_URL: http://localhost:4321
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      # web/tsconfig type-checks ../orchestrator/src through the @orchestrator
+      # alias, so the orchestrator's own dependencies (postgres, openai, zod,
+      # mammoth, pdfjs-dist) must be installed too or tsc reports TS2307.
+      - run: npm ci --prefix ../orchestrator
+      - run: npx tsc --noEmit
+      # vitest is invoked directly here, so the `pretest` hook that builds the
+      # PDF render worker does not run; build it explicitly.
+      - run: npm run build:report-worker
+      # Live tests are file-excluded — with the dummy DATABASE_URL set above
+      # their skipIf would otherwise evaluate truthy and run against nothing.
+      - run: npx vitest run --exclude "**/*.live.test.ts"
+      - run: npm run build
+
+  orchestrator:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: orchestrator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: orchestrator/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      # vitest deliberately NOT run here: autofill.test.ts and
+      # ingest-user.test.ts contain IN-FILE live describes gated on
+      # DATABASE_URL truthiness — the dummy URL above would un-skip them.
+      # The orchestrator suite runs in every local verification bar instead
+      # (T12 spec §4; changing those T2–T7-era gates is out of scope).
+
+  docker:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Machine verification of the root Dockerfile (the dev sandbox has no
+      # Docker). Zeabur builds the same file independently on deploy.
+      - run: docker build -t cra-assessment:ci .
